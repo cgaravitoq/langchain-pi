@@ -37,12 +37,8 @@ class ChatPi(BaseChatModel):
     system: Optional[str] = DEFAULT_SYSTEM_PROMPT
 
     node_path: str = "node"
-    """Executable used to run the sidecar."""
     sidecar_cwd: Optional[str] = None
-    """Working directory for the sidecar process."""
     node_modules_dir: Optional[str] = None
-    """A node_modules directory containing @earendil-works/pi-ai, for when the
-    package is not installed alongside one (e.g. pip into site-packages)."""
 
     _sidecar: Optional[PiSidecar] = PrivateAttr(default=None)
 

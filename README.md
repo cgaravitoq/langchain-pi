@@ -97,13 +97,20 @@ into `~/.local/share/opencode/auth.json`. Install the optional extra:
 pip install "langchain-pi[opencode]"
 ```
 
+Free models work **two ways** — with or without an API key:
+
+- **No key** → the anonymous IP-rate-limited trial (works out of the box).
+- **With a key** (auto-read from `auth.json`, or `OPENCODE_API_KEY` / `api_key`) → higher limits.
+
+Paid models require a key.
+
 ```python
 from langchain_pi.opencode import ChatOpencode
 
-# Free models work with no key (anonymous IP-limited trial):
+# Free — no key needed (anonymous), or auto-uses a key if present for higher limits:
 free = ChatOpencode("deepseek-v4-flash-free")
 
-# A key (auto-read, or OPENCODE_API_KEY / api_key) unlocks paid models + higher limits:
+# Paid — requires a key (auto-read or explicit api_key):
 paid = ChatOpencode("glm-5")
 go = ChatOpencode("glm-5", tier="go")
 ```
