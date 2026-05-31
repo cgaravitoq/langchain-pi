@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "langchain-pi"
-version = "0.1.0"
+version = "0.1.1"
 description = "LangChain BaseChatModel adapter for Pi (@earendil-works/pi-ai) via a Node sidecar — use Pi with any provider, model and auth from LangChain/LangGraph in Python."
 readme = "README.md"
 license = { text = "MIT" }

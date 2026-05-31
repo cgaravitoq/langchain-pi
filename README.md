@@ -16,8 +16,10 @@ headers; Python only frames the request and reconstructs the streamed events.
 
 - **Python** ≥ 3.9
 - **Node** ≥ 22.19.0 on `PATH`, with `@earendil-works/pi-ai` and
-  `@earendil-works/pi-coding-agent` resolvable (install them in your project, or
-  point `node_modules_dir` at a directory whose `node_modules` has them).
+  `@earendil-works/pi-coding-agent` resolvable (install them where the sidecar can
+  reach them, or point `node_modules_dir` at a `node_modules` directory that has
+  them). Note: `NODE_PATH` does not work for ESM, so `node_modules_dir` resolves
+  each package via its `package.json` entry.
 - A provider authenticated in `~/.pi` (e.g. `openai-codex`), exactly as for the
   Pi CLI / the TS package.
 
@@ -76,12 +78,12 @@ agent.invoke({"messages": [("user", "What's the weather in Paris?")]})
 
 ### Pointing at your Node install
 
-If pi-ai isn't resolvable from the sidecar's location, pass the directory whose
-`node_modules` contains it:
+If pi-ai isn't resolvable from the sidecar's location, pass the `node_modules`
+directory that contains it:
 
 ```python
 ChatPi(provider="opencode", model="deepseek-v4-flash-free",
-       node_modules_dir="/path/to/your/project")
+       node_modules_dir="/path/to/your/project/node_modules")
 ```
 
 ## Notes

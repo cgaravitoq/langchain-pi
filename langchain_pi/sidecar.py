@@ -1,10 +1,12 @@
 """Manages the long-lived Node sidecar process and the NDJSON stdio protocol.
 
 A background reader thread drains stdout continuously into per-request queues
-(keyed by request id) so a slow Python consumer can never deadlock the pipe.
-Each ``stream()`` call sends one request and yields its events until the ``end``
-sentinel; if the consumer stops early (e.g. LangGraph cancellation) it sends an
-``abort`` control message so the in-flight provider request is cancelled."""
+(keyed by request id) so a slow Python consumer can never deadlock the pipe; a
+second thread drains stderr. Each ``stream()`` call sends one request and yields
+its events until the ``end`` sentinel. If the consumer stops early (e.g. LangGraph
+cancellation) it sends an ``abort`` control message so the in-flight provider
+request is cancelled. If the Node process dies, ``stream()`` raises with the
+captured stderr instead of hanging."""
 
 from __future__ import annotations
 
@@ -16,7 +18,7 @@ import threading
 from pathlib import Path
 from queue import Queue
 from subprocess import PIPE, Popen
-from typing import Any, Iterator, Optional
+from typing import Iterator, Optional
 
 _SCRIPT = Path(__file__).parent / "_sidecar" / "pi-sidecar.mjs"
 
@@ -31,9 +33,9 @@ class PiSidecar:
     ) -> None:
         env = dict(os.environ)
         if node_modules_dir:
-            nm = str(Path(node_modules_dir))
-            existing = env.get("NODE_PATH", "")
-            env["NODE_PATH"] = nm + (os.pathsep + existing if existing else "")
+            # NODE_PATH does not work for ESM; the sidecar resolves the pi
+            # packages from this node_modules via each package.json entry.
+            env["LANGCHAIN_PI_NODE_MODULES"] = str(Path(node_modules_dir))
         self._proc = Popen(
             [node_path, str(script_path or _SCRIPT)],
             cwd=cwd or None,
@@ -45,11 +47,23 @@ class PiSidecar:
         )
         self._queues: dict[str, Queue] = {}
         self._counter = itertools.count()
+        self._lock = threading.Lock()
         self._write_lock = threading.Lock()
+        self._stderr_chunks: list[bytes] = []
+        self._dead = False
         self._closed = False
-        self._reader = threading.Thread(target=self._read_loop, daemon=True)
-        self._reader.start()
+        threading.Thread(target=self._read_loop, daemon=True).start()
+        threading.Thread(target=self._drain_stderr, daemon=True).start()
         atexit.register(self.close)
+
+    def _drain_stderr(self) -> None:
+        stderr = self._proc.stderr
+        assert stderr is not None
+        for chunk in iter(lambda: stderr.read(4096), b""):
+            self._stderr_chunks.append(chunk)
+
+    def _stderr_text(self) -> str:
+        return b"".join(self._stderr_chunks).decode("utf-8", "replace").strip()
 
     def _read_loop(self) -> None:
         buf = b""
@@ -72,16 +86,24 @@ class PiSidecar:
                 queue = self._queues.get(event.get("id"))
                 if queue is not None:
                     queue.put(event)
-        # Process exited: unblock any waiting consumers.
-        for queue in list(self._queues.values()):
-            queue.put({"type": "end"})
+        # Process exited: fail any in-flight (or future) request instead of
+        # blocking forever. Guarded so registration in stream() can't race it.
+        with self._lock:
+            self._dead = True
+            message = self._stderr_text() or "pi sidecar process exited"
+            for queue in self._queues.values():
+                queue.put({"type": "error", "error": {"errorMessage": message}})
+                queue.put({"type": "end"})
 
     def stream(self, request: dict) -> Iterator[dict]:
-        if self._closed:
-            raise RuntimeError("PiSidecar is closed")
-        rid = str(next(self._counter))
-        queue: Queue = Queue()
-        self._queues[rid] = queue
+        with self._lock:
+            if self._closed or self._dead:
+                raise RuntimeError(
+                    self._stderr_text() or "pi sidecar is not running"
+                )
+            rid = str(next(self._counter))
+            queue: Queue = Queue()
+            self._queues[rid] = queue
         self._write({**request, "id": rid})
         try:
             while True:
@@ -93,7 +115,8 @@ class PiSidecar:
             self._write({"type": "control", "action": "abort", "id": rid})
             raise
         finally:
-            self._queues.pop(rid, None)
+            with self._lock:
+                self._queues.pop(rid, None)
 
     def _write(self, payload: dict) -> None:
         if self._closed or self._proc.stdin is None:
@@ -103,19 +126,18 @@ class PiSidecar:
             with self._write_lock:
                 self._proc.stdin.write(line)
                 self._proc.stdin.flush()
-        except (BrokenPipeError, ValueError):
+        except (BrokenPipeError, ValueError, OSError):
             pass
 
     def close(self) -> None:
         if self._closed:
             return
         self._closed = True
-        for stream in (self._proc.stdin,):
-            try:
-                if stream is not None:
-                    stream.close()
-            except Exception:
-                pass
+        try:
+            if self._proc.stdin is not None:
+                self._proc.stdin.close()
+        except Exception:
+            pass
         try:
             self._proc.terminate()
         except Exception:

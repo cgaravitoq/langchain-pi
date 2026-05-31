@@ -3,13 +3,51 @@
 // request id. Node owns model resolution, OAuth refresh and the provider stealth
 // headers — Python never touches a token. buildContext is ported verbatim from
 // langchain-pi-ts/src/pi-conversions.ts so multi-turn history is byte-faithful.
-import { streamSimple } from "@earendil-works/pi-ai";
-import { AuthStorage, ModelRegistry } from "@earendil-works/pi-coding-agent";
-
-const auth = AuthStorage.create();
-const registry = ModelRegistry.create(auth);
+import { readFileSync } from "node:fs";
+import { resolve as resolvePath } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const out = (o) => process.stdout.write(`${JSON.stringify(o)}\n`);
+
+// By default a bare ESM import resolves pi-ai / pi-coding-agent from a
+// node_modules that is an ancestor of this file. When the package lives
+// elsewhere (pip into site-packages), set LANGCHAIN_PI_NODE_MODULES to a
+// node_modules dir that has them; NODE_PATH does NOT work for ESM imports, so we
+// read each package.json and import its entry by absolute file URL instead.
+function entryUrl(nodeModules, name) {
+  const dir = resolvePath(nodeModules, name);
+  const pkg = JSON.parse(readFileSync(resolvePath(dir, "package.json"), "utf8"));
+  const dot = pkg.exports?.["."];
+  let entry = pkg.module ?? pkg.main ?? "index.js";
+  if (typeof dot === "string") {
+    entry = dot;
+  } else if (dot) {
+    const cond = dot.import ?? dot.node ?? dot.default;
+    entry = typeof cond === "string" ? cond : (cond?.default ?? cond?.node ?? entry);
+  }
+  return pathToFileURL(resolvePath(dir, entry)).href;
+}
+
+let streamSimple;
+let registry;
+let initError;
+
+const ready = (async () => {
+  try {
+    const nm = process.env.LANGCHAIN_PI_NODE_MODULES;
+    const piAi = nm
+      ? entryUrl(nm, "@earendil-works/pi-ai")
+      : "@earendil-works/pi-ai";
+    const piAgent = nm
+      ? entryUrl(nm, "@earendil-works/pi-coding-agent")
+      : "@earendil-works/pi-coding-agent";
+    ({ streamSimple } = await import(piAi));
+    const { AuthStorage, ModelRegistry } = await import(piAgent);
+    registry = ModelRegistry.create(AuthStorage.create());
+  } catch (e) {
+    initError = String(e?.stack ?? e?.message ?? e);
+  }
+})();
 
 const ZERO_USAGE = {
   input: 0,
@@ -66,6 +104,12 @@ const controllers = new Map();
 
 async function handle(req) {
   const id = req.id;
+  await ready;
+  if (initError) {
+    out({ id, type: "error", error: { errorMessage: initError } });
+    out({ id, type: "end" });
+    return;
+  }
   const controller = new AbortController();
   controllers.set(id, controller);
   try {

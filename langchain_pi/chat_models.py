@@ -46,7 +46,8 @@ class ChatPi(BaseChatModel):
     sidecar_cwd: Optional[str] = None
     """Working directory for the sidecar process."""
     node_modules_dir: Optional[str] = None
-    """Directory whose node_modules holds @earendil-works/pi-ai (prepended to NODE_PATH)."""
+    """A node_modules directory containing @earendil-works/pi-ai, for when the
+    package is not installed alongside one (e.g. pip into site-packages)."""
 
     _sidecar: Optional[PiSidecar] = PrivateAttr(default=None)
 
