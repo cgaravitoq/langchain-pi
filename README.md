@@ -30,6 +30,19 @@ npm install @earendil-works/pi-ai @earendil-works/pi-coding-agent
 
 ## Usage
 
+`create_chat` is the simplest entry — pass a provider and it routes to the right
+backend (`opencode`/`opencode-go` → native Zen, everything else → Pi):
+
+```python
+from langchain_pi import create_chat
+
+free = create_chat("opencode", "deepseek-v4-flash-free")          # free, no key
+go = create_chat("opencode-go", "glm-5", api_key="...")           # subscription
+codex = create_chat("openai-codex", "gpt-5.3-codex-spark")        # via Pi
+```
+
+Or construct a backend directly:
+
 ```python
 from langchain_pi import ChatPi
 
@@ -88,11 +101,7 @@ ChatPi(provider="openai-codex", model="gpt-5.3-codex-spark",
 
 [OpenCode Zen](https://opencode.ai/docs/zen/) is an OpenAI-compatible endpoint, so
 you don't need Pi. `langchain_pi.opencode` ships `ChatOpencode`, a thin
-`ChatOpenAI` subclass pointed at it. Install the optional extra:
-
-```sh
-pip install "langchain-pi[opencode]"
-```
+`ChatOpenAI` subclass pointed at it (`langchain-openai` ships as a dependency).
 
 The API key is **optional**: free models work with no key (anonymous, IP-rate-
 limited). For paid models pass a key via `OPENCODE_API_KEY` (env) or `api_key`.
