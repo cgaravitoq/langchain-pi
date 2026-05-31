@@ -86,6 +86,30 @@ ChatPi(provider="opencode", model="deepseek-v4-flash-free",
        node_modules_dir="/path/to/your/project/node_modules")
 ```
 
+## Native opencode/Zen (no Pi)
+
+For [OpenCode Zen](https://opencode.ai/docs/zen/) you don't need Pi — it's an
+OpenAI-compatible endpoint. `langchain_pi.opencode` ships a `ChatOpencode` (a thin
+`ChatOpenAI` subclass) that points at it and reads the key opencode auto-provisions
+into `~/.local/share/opencode/auth.json`. Install the optional extra:
+
+```sh
+pip install "langchain-pi[opencode]"
+```
+
+```python
+from langchain_pi.opencode import ChatOpencode
+
+# Free models work with no key (anonymous IP-limited trial):
+free = ChatOpencode("deepseek-v4-flash-free")
+
+# A key (auto-read, or OPENCODE_API_KEY / api_key) unlocks paid models + higher limits:
+paid = ChatOpencode("glm-5")
+go = ChatOpencode("glm-5", tier="go")
+```
+
+Free models: `deepseek-v4-flash-free`, `big-pickle`, `mimo-v2.5-free`, `nemotron-3-super-free`.
+
 ## Notes
 
 - Node is a runtime prerequisite — the heavy provider/auth logic lives in pi-ai.
