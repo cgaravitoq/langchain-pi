@@ -9,11 +9,8 @@ import { pathToFileURL } from "node:url";
 
 const out = (o) => process.stdout.write(`${JSON.stringify(o)}\n`);
 
-// By default a bare ESM import resolves pi-ai / pi-coding-agent from a
-// node_modules that is an ancestor of this file. When the package lives
-// elsewhere (pip into site-packages), set LANGCHAIN_PI_NODE_MODULES to a
-// node_modules dir that has them; NODE_PATH does NOT work for ESM imports, so we
-// read each package.json and import its entry by absolute file URL instead.
+// LANGCHAIN_PI_NODE_MODULES resolves the pi packages by absolute URL (NODE_PATH
+// is ignored for ESM); otherwise a bare import resolves them from an ancestor.
 function entryUrl(nodeModules, name) {
   const dir = resolvePath(nodeModules, name);
   const pkg = JSON.parse(readFileSync(resolvePath(dir, "package.json"), "utf8"));
@@ -58,8 +55,6 @@ const ZERO_USAGE = {
   cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
 };
 
-// neutral IR (from Python) -> pi Context, stamping model.api/provider/id on
-// assistant turns exactly like buildContext in pi-conversions.ts.
 function buildContext(req, model) {
   const timestamp = Date.now();
   const messages = [];
@@ -168,8 +163,7 @@ async function handle(req) {
   }
 }
 
-// NDJSON framing: split on "\n" only (never U+2028/U+2029, which are valid
-// inside JSON strings); strip a trailing "\r". Requests run sequentially.
+// NDJSON: split on "\n" only (not U+2028/U+2029). Requests run sequentially.
 let chain = Promise.resolve();
 let buf = "";
 process.stdin.setEncoding("utf8");

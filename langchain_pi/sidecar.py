@@ -1,12 +1,4 @@
-"""Manages the long-lived Node sidecar process and the NDJSON stdio protocol.
-
-A background reader thread drains stdout continuously into per-request queues
-(keyed by request id) so a slow Python consumer can never deadlock the pipe; a
-second thread drains stderr. Each ``stream()`` call sends one request and yields
-its events until the ``end`` sentinel. If the consumer stops early (e.g. LangGraph
-cancellation) it sends an ``abort`` control message so the in-flight provider
-request is cancelled. If the Node process dies, ``stream()`` raises with the
-captured stderr instead of hanging."""
+"""Long-lived Node sidecar process over an NDJSON stdio protocol."""
 
 from __future__ import annotations
 
@@ -33,8 +25,7 @@ class PiSidecar:
     ) -> None:
         env = dict(os.environ)
         if node_modules_dir:
-            # NODE_PATH does not work for ESM; the sidecar resolves the pi
-            # packages from this node_modules via each package.json entry.
+            # NODE_PATH is ignored for ESM; the sidecar resolves from here instead.
             env["LANGCHAIN_PI_NODE_MODULES"] = str(Path(node_modules_dir))
         self._proc = Popen(
             [node_path, str(script_path or _SCRIPT)],
@@ -143,7 +134,7 @@ class PiSidecar:
         except Exception:
             pass
 
-    def __del__(self) -> None:  # best-effort cleanup
+    def __del__(self) -> None:
         try:
             self.close()
         except Exception:

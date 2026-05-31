@@ -1,8 +1,3 @@
-"""LangChain <-> Pi conversions. The LangChain-facing mirror of the TS
-pi-conversions.ts. Message context shaping that needs the resolved pi Model
-(assistant api/provider/id stamping) lives in the Node sidecar; here we only
-extract a neutral IR from LangChain messages plus tool/usage/metadata mapping."""
-
 from __future__ import annotations
 
 import json

@@ -1,6 +1,3 @@
-"""ChatPi: a LangChain BaseChatModel adapter for Pi (@earendil-works/pi-ai),
-driven through a Node sidecar. 1:1 mirror of langchain-pi-ts ChatPi."""
-
 from __future__ import annotations
 
 import json
@@ -32,9 +29,7 @@ def _error_message(event: dict) -> str:
 
 
 class ChatPi(BaseChatModel):
-    """Chat model backed by Pi. Resolves provider/model/credentials through pi's
-    own ModelRegistry/AuthStorage (inside the Node sidecar), so any provider
-    authenticated in ``~/.pi`` works with no extra configuration."""
+    """LangChain chat model backed by Pi (via a Node sidecar)."""
 
     provider: str
     model: str
