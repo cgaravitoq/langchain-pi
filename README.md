@@ -20,8 +20,6 @@ headers; Python only frames the request and reconstructs the streamed events.
   reach them, or point `node_modules_dir` at a `node_modules` directory that has
   them). Note: `NODE_PATH` does not work for ESM, so `node_modules_dir` resolves
   each package via its `package.json` entry.
-- A provider authenticated in `~/.pi` (e.g. `openai-codex`), exactly as for the
-  Pi CLI / the TS package.
 
 ## Install
 
@@ -82,36 +80,28 @@ If pi-ai isn't resolvable from the sidecar's location, pass the `node_modules`
 directory that contains it:
 
 ```python
-ChatPi(provider="opencode", model="deepseek-v4-flash-free",
+ChatPi(provider="openai-codex", model="gpt-5.3-codex-spark",
        node_modules_dir="/path/to/your/project/node_modules")
 ```
 
 ## Native opencode/Zen (no Pi)
 
-For [OpenCode Zen](https://opencode.ai/docs/zen/) you don't need Pi — it's an
-OpenAI-compatible endpoint. `langchain_pi.opencode` ships a `ChatOpencode` (a thin
-`ChatOpenAI` subclass) that points at it and reads the key opencode auto-provisions
-into `~/.local/share/opencode/auth.json`. Install the optional extra:
+[OpenCode Zen](https://opencode.ai/docs/zen/) is an OpenAI-compatible endpoint, so
+you don't need Pi. `langchain_pi.opencode` ships `ChatOpencode`, a thin
+`ChatOpenAI` subclass pointed at it. Install the optional extra:
 
 ```sh
 pip install "langchain-pi[opencode]"
 ```
 
-Free models work **two ways** — with or without an API key:
-
-- **No key** → the anonymous IP-rate-limited trial (works out of the box).
-- **With a key** (auto-read from `auth.json`, or `OPENCODE_API_KEY` / `api_key`) → higher limits.
-
-Paid models require a key.
+The API key is **optional**: free models work with no key (anonymous, IP-rate-
+limited). For paid models pass a key via `OPENCODE_API_KEY` (env) or `api_key`.
 
 ```python
 from langchain_pi.opencode import ChatOpencode
 
-# Free — no key needed (anonymous), or auto-uses a key if present for higher limits:
-free = ChatOpencode("deepseek-v4-flash-free")
-
-# Paid — requires a key (auto-read or explicit api_key):
-paid = ChatOpencode("glm-5")
+free = ChatOpencode("deepseek-v4-flash-free")  # no key
+paid = ChatOpencode("glm-5")  # OPENCODE_API_KEY or api_key
 go = ChatOpencode("glm-5", tier="go")
 ```
 
@@ -121,7 +111,6 @@ Free models: `deepseek-v4-flash-free`, `big-pickle`, `mimo-v2.5-free`, `nemotron
 
 - Node is a runtime prerequisite — the heavy provider/auth logic lives in pi-ai.
 - Tool-call deltas and usage/cost metadata are reconstructed 1:1 with the TS twin.
-- Cancellation (e.g. LangGraph) aborts the in-flight provider request via the sidecar.
 
 ## License
 
