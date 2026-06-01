@@ -11,72 +11,66 @@ from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 from pydantic import PrivateAttr
 
-from .pi_conversions import (
+from .auth import CodexAuth
+from .client import CodexClient
+from .codex_conversions import (
     apply_stop,
-    messages_to_pi_payload,
+    build_request_body,
+    messages_to_responses,
     to_response_metadata,
     to_tool_calls,
     to_usage_metadata,
-    tool_to_pi,
+    tool_to_responses,
 )
-from .sidecar import PiSidecar
+from .constants import DEFAULT_CODEX_BASE_URL, PROVIDER_ID
+from .models import clamp_thinking_level
 
 DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant."
 
 
-def _error_message(event: dict) -> str:
-    return (event.get("error") or {}).get("errorMessage") or "pi-ai request failed"
+class ChatCodex(BaseChatModel):
+    """LangChain chat model for OpenAI Codex (ChatGPT subscription)."""
 
-
-class ChatPi(BaseChatModel):
-    """LangChain chat model backed by Pi (via a Node sidecar)."""
-
-    provider: str
     model: str
     reasoning: str = "low"
     system: Optional[str] = DEFAULT_SYSTEM_PROMPT
+    auth_path: Optional[str] = None
+    base_url: str = DEFAULT_CODEX_BASE_URL
+    session_id: Optional[str] = None
 
-    node_path: str = "node"
-    sidecar_cwd: Optional[str] = None
-    node_modules_dir: Optional[str] = None
-
-    _sidecar: Optional[PiSidecar] = PrivateAttr(default=None)
+    _client: Optional[CodexClient] = PrivateAttr(default=None)
 
     @property
     def _llm_type(self) -> str:
-        return "pi"
+        return PROVIDER_ID
 
     @property
     def _identifying_params(self) -> dict[str, Any]:
         return {
-            "provider": self.provider,
+            "provider": PROVIDER_ID,
             "model": self.model,
             "reasoning": self.reasoning,
         }
 
-    def _get_sidecar(self) -> PiSidecar:
-        if self._sidecar is None:
-            self._sidecar = PiSidecar(
-                node_path=self.node_path,
-                cwd=self.sidecar_cwd,
-                node_modules_dir=self.node_modules_dir,
+    def _get_client(self) -> CodexClient:
+        if self._client is None:
+            self._client = CodexClient(
+                CodexAuth(self.auth_path), base_url=self.base_url
             )
-        return self._sidecar
+        return self._client
 
-    def _build_request(self, messages: list[BaseMessage], **kwargs: Any) -> dict:
-        system_prompt, history = messages_to_pi_payload(messages, self.system)
-        request: dict[str, Any] = {
-            "provider": self.provider,
-            "modelId": self.model,
-            "reasoning": self.reasoning,
-            "messages": history,
-        }
-        if system_prompt:
-            request["systemPrompt"] = system_prompt
-        tools = kwargs.get("tools")
-        if tools:
-            request["tools"] = tools
-        return request
+    def _build_body(self, messages: list[BaseMessage], **kwargs: Any) -> dict:
+        instructions, input_items = messages_to_responses(messages, self.system)
+        effort = clamp_thinking_level(self.model, self.reasoning)
+        return build_request_body(
+            model=self.model,
+            instructions=instructions,
+            input_items=input_items,
+            tools=kwargs.get("tools"),
+            tool_choice=kwargs.get("tool_choice"),
+            reasoning_effort=effort,
+            session_id=self.session_id,
+        )
 
     def _generate(
         self,
@@ -90,26 +84,23 @@ class ChatPi(BaseChatModel):
         usage: Optional[dict] = None
         stop_reason: Optional[str] = None
 
-        for event in self._get_sidecar().stream(self._build_request(messages, **kwargs)):
-            kind = event.get("type")
+        body = self._build_body(messages, **kwargs)
+        for event in self._get_client().stream(body, session_id=self.session_id):
+            kind = event["type"]
             if kind == "text_delta":
                 text_parts.append(event["delta"])
-            elif kind == "toolcall_end":
-                raw_tool_calls.append(event["toolCall"])
+            elif kind == "tool_call":
+                raw_tool_calls.append(event["tool_call"])
             elif kind == "done":
                 usage = event.get("usage")
-                stop_reason = event.get("stopReason")
-            elif kind == "error":
-                raise RuntimeError(_error_message(event))
+                stop_reason = event.get("stop_reason")
 
         text = apply_stop("".join(text_parts), stop)
         message = AIMessage(
             content=text,
             tool_calls=to_tool_calls(raw_tool_calls),
             usage_metadata=to_usage_metadata(usage),
-            response_metadata=to_response_metadata(
-                self.provider, self.model, stop_reason, usage
-            ),
+            response_metadata=to_response_metadata(self.model, stop_reason, usage),
         )
         return ChatResult(generations=[ChatGeneration(message=message)])
 
@@ -120,8 +111,9 @@ class ChatPi(BaseChatModel):
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ) -> Iterator[ChatGenerationChunk]:
-        for event in self._get_sidecar().stream(self._build_request(messages, **kwargs)):
-            kind = event.get("type")
+        body = self._build_body(messages, **kwargs)
+        for event in self._get_client().stream(body, session_id=self.session_id):
+            kind = event["type"]
             if kind == "text_delta":
                 chunk = ChatGenerationChunk(
                     message=AIMessageChunk(content=event["delta"])
@@ -129,17 +121,20 @@ class ChatPi(BaseChatModel):
                 if run_manager:
                     run_manager.on_llm_new_token(event["delta"], chunk=chunk)
                 yield chunk
-            elif kind == "toolcall_end":
-                tc = event["toolCall"]
+            elif kind == "tool_call":
+                tc = event["tool_call"]
+                args = tc.get("arguments")
+                if not isinstance(args, str):
+                    args = json.dumps(args or {})
                 yield ChatGenerationChunk(
                     message=AIMessageChunk(
                         content="",
                         tool_call_chunks=[
                             {
                                 "name": tc.get("name"),
-                                "args": json.dumps(tc.get("arguments") or {}),
-                                "id": tc.get("id"),
-                                "index": event.get("contentIndex", 0),
+                                "args": args,
+                                "id": tc.get("call_id") or tc.get("id"),
+                                "index": 0,
                                 "type": "tool_call_chunk",
                             }
                         ],
@@ -151,15 +146,10 @@ class ChatPi(BaseChatModel):
                         content="",
                         usage_metadata=to_usage_metadata(event.get("usage")),
                         response_metadata=to_response_metadata(
-                            self.provider,
-                            self.model,
-                            event.get("stopReason"),
-                            event.get("usage"),
+                            self.model, event.get("stop_reason"), event.get("usage")
                         ),
                     )
                 )
-            elif kind == "error":
-                raise RuntimeError(_error_message(event))
 
     def bind_tools(
         self,
@@ -168,5 +158,7 @@ class ChatPi(BaseChatModel):
         tool_choice: Optional[Union[str, dict, bool]] = None,
         **kwargs: Any,
     ) -> Runnable[LanguageModelInput, AIMessage]:
-        pi_tools = [tool_to_pi(tool) for tool in tools]
-        return self.bind(tools=pi_tools, **kwargs)
+        codex_tools = [tool_to_responses(tool) for tool in tools]
+        if tool_choice is not None:
+            kwargs["tool_choice"] = tool_choice
+        return self.bind(tools=codex_tools, **kwargs)
