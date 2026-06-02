@@ -1,13 +1,15 @@
 # langchain-pi
 
-Native LangChain chat models for **OpenAI Codex** with ChatGPT Plus/Pro
-subscription OAuth and **OpenCode Zen/Go**. No Pi runtime, no Node sidecar.
+Native LangChain chat models for **OpenAI Codex** (ChatGPT Plus/Pro
+subscription OAuth), **Claude** (Claude Code subscription OAuth), and
+**OpenCode Zen/Go**. No Pi runtime, no Node sidecar.
 
 ## Requirements
 
 - Python >= 3.9
 - For Codex: an `openai-codex` credential in `~/.pi/agent/auth.json`, or sign in
   with `codex-login`
+- For Claude Code: the Claude Code CLI logged in once (`~/.claude/.credentials.json`)
 - For paid OpenCode models: `OPENCODE_API_KEY` or an explicit `api_key`
 
 ## Install
@@ -25,6 +27,7 @@ pip install langchain-pi
 from langchain_pi import create_chat
 
 codex = create_chat("openai-codex", "gpt-5.3-codex-spark")
+claude = create_chat("claude-code", "claude-sonnet-4-6")
 free = create_chat("opencode", "deepseek-v4-flash-free")
 go = create_chat("opencode-go", "glm-5", api_key="...")
 ```
@@ -106,6 +109,34 @@ go = ChatOpencode("glm-5", tier="go")
 
 Free models include `deepseek-v4-flash-free`, `big-pickle`, `mimo-v2.5-free`, and
 `nemotron-3-super-free`.
+
+## Claude Code (Anthropic subscription)
+
+`ChatClaudeCode` talks to the Anthropic Messages API authenticated with the
+Claude Code OAuth session already on the machine (`~/.claude/.credentials.json`),
+billing requests against your Claude Code subscription — no API key. It reads and
+refreshes the token in place (with a `claude` CLI fallback).
+
+```python
+from langchain_pi import ChatClaudeCode, create_chat
+
+chat = create_chat("claude-code", "claude-sonnet-4-6")
+print(chat.invoke("Hello!").content)
+
+# Or construct directly, with options:
+opus = ChatClaudeCode(model="claude-opus-4-8", reasoning="medium")
+```
+
+Models: `claude-opus-4-8`, `claude-opus-4-7`, `claude-sonnet-4-6`,
+`claude-haiku-4-5`. Reasoning uses adaptive thinking on Opus 4.8/4.7 and a token
+budget on Sonnet 4.6 (Haiku has no reasoning). The 1M-context beta is **opt-in**
+via `long_context=True`; the subscription rejects long-context requests without
+extra credits otherwise. Tool calling and streaming work as with `ChatCodex`.
+
+> Using a subscription OAuth session from a third-party app may violate
+> Anthropic's terms and risk your account. See the
+> [`pi-claude-code-auth`](https://github.com/cgaravitoq/pi-claude-code-auth)
+> README before relying on this.
 
 ## License
 
