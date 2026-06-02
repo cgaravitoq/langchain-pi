@@ -15,13 +15,9 @@ def pytest_runtest_setup() -> None:
 
 def make_jwt(account_id: str = "acct_test_123") -> str:
     header = base64.urlsafe_b64encode(b'{"alg":"none"}').rstrip(b"=").decode()
-    payload_obj = {
-        "https://api.openai.com/auth": {"chatgpt_account_id": account_id}
-    }
+    payload_obj = {"https://api.openai.com/auth": {"chatgpt_account_id": account_id}}
     payload = (
-        base64.urlsafe_b64encode(json.dumps(payload_obj).encode())
-        .rstrip(b"=")
-        .decode()
+        base64.urlsafe_b64encode(json.dumps(payload_obj).encode()).rstrip(b"=").decode()
     )
     return f"{header}.{payload}.sig"
 
@@ -69,3 +65,22 @@ def mock_transport_factory():
         return httpx.MockTransport(handler)
 
     return factory
+
+
+@pytest.fixture
+def claude_creds_file(tmp_path):
+    path = tmp_path / ".credentials.json"
+    expires = int(time.time() * 1000) + 3_600_000
+    path.write_text(
+        json.dumps(
+            {
+                "claudeAiOauth": {
+                    "accessToken": "cc_access",
+                    "refreshToken": "cc_refresh",
+                    "expiresAt": expires,
+                }
+            },
+            indent=2,
+        )
+    )
+    return path

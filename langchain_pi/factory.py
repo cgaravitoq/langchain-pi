@@ -16,4 +16,8 @@ def create_chat(provider: str, model: str, **kwargs: Any) -> BaseChatModel:
 
         tier = "go" if provider == "opencode-go" else "zen"
         return ChatOpencode(model, tier=tier, **kwargs)
+    if provider == "claude-code":
+        from .claude_code_chat_models import ChatClaudeCode
+
+        return ChatClaudeCode(model=model, **kwargs)
     raise ValueError(f"Unsupported provider: {provider}")
