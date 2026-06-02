@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "langchain-pi"
-version = "0.6.0"
+version = "0.6.1"
 description = "Native LangChain chat models for OpenAI Codex subscription OAuth and OpenCode Zen/Go — no Node sidecar."
 readme = "README.md"
 license = { text = "MIT" }
