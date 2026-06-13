@@ -1,0 +1,27 @@
+{
+  "$schema": "https://btca.dev/btca.schema.json",
+  "dataDirectory": ".btca",
+  "resources": [
+    {
+      "name": "open-langchain",
+      "type": "git",
+      "url": "https://github.com/cgaravitoq/langchain-pi",
+      "branch": "main",
+      "specialNotes": "This repo (to be renamed open-langchain): native LangChain chat models in Python, no Pi sidecar. ChatCodex (auth.py, client.py, codex_conversions.py, models.py, chat_models.py), ChatClaudeCode (claude_code_*.py), ChatOpencode (opencode.py). Reverse-engineered OAuth + Anthropic billing signing live in claude_code_signing.py and auth.py."
+    },
+    {
+      "name": "langchain-pi-ts",
+      "type": "git",
+      "url": "https://github.com/cgaravitoq/langchain-pi-ts",
+      "branch": "main",
+      "specialNotes": "TypeScript twin (to be renamed open-langchain-ts). The Codex path here was ported FROM this Python repo; keep both in sync when the Codex responses API or OpenAI/Anthropic OAuth flow changes."
+    },
+    {
+      "name": "opencode-claude-auth",
+      "type": "git",
+      "url": "https://github.com/griffinmartin/opencode-claude-auth",
+      "branch": "main",
+      "specialNotes": "Upstream origin of the Claude Code OAuth + payload-transform logic mirrored in claude_code_*.py. Re-read when Claude Code changes its billing header, betas, or refresh flow."
+    }
+  ]
+}
