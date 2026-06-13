@@ -5,8 +5,8 @@ import json
 import httpx
 import pytest
 
-from langchain_pi.auth import CodexAuth
-from langchain_pi.client import (
+from open_langchain.auth import CodexAuth
+from open_langchain.client import (
     CodexClient,
     CodexUsageLimitError,
     build_headers,
@@ -176,7 +176,7 @@ def test_401_refresh_retry(auth_file, monkeypatch):
         with httpx.Client(transport=httpx.MockTransport(refresh_handler)) as c:
             return c.post(url, **kwargs)
 
-    monkeypatch.setattr("langchain_pi.auth.httpx.post", fake_post)
+    monkeypatch.setattr("open_langchain.auth.httpx.post", fake_post)
 
     client = _make_client(auth_file, handler)
     events = list(client.stream({"model": "gpt-5.5"}))

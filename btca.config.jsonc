@@ -5,14 +5,14 @@
     {
       "name": "open-langchain",
       "type": "git",
-      "url": "https://github.com/cgaravitoq/langchain-pi",
+      "url": "https://github.com/cgaravitoq/open-langchain",
       "branch": "main",
       "specialNotes": "This repo (to be renamed open-langchain): native LangChain chat models in Python, no Pi sidecar. ChatCodex (auth.py, client.py, codex_conversions.py, models.py, chat_models.py), ChatClaudeCode (claude_code_*.py), ChatOpencode (opencode.py). Reverse-engineered OAuth + Anthropic billing signing live in claude_code_signing.py and auth.py."
     },
     {
-      "name": "langchain-pi-ts",
+      "name": "open-langchain-ts",
       "type": "git",
-      "url": "https://github.com/cgaravitoq/langchain-pi-ts",
+      "url": "https://github.com/cgaravitoq/open-langchain-ts",
       "branch": "main",
       "specialNotes": "TypeScript twin (to be renamed open-langchain-ts). The Codex path here was ported FROM this Python repo; keep both in sync when the Codex responses API or OpenAI/Anthropic OAuth flow changes."
     },

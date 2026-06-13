@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from langchain_core.messages import AIMessageChunk, HumanMessage
 
-from langchain_pi.claude_code_chat_models import ChatClaudeCode
+from open_langchain.claude_code_chat_models import ChatClaudeCode
 
 
 class FakeClient:

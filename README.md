@@ -1,4 +1,4 @@
-# langchain-pi
+# open-langchain
 
 Native LangChain chat models for **OpenAI Codex** (ChatGPT Plus/Pro
 subscription OAuth), **Claude** (Claude Code subscription OAuth), and
@@ -15,8 +15,8 @@ subscription OAuth), **Claude** (Claude Code subscription OAuth), and
 ## Install
 
 ```sh
-pip install langchain-pi
-# or: uv add langchain-pi
+pip install open-langchain
+# or: uv add open-langchain
 ```
 
 ## Usage
@@ -24,7 +24,7 @@ pip install langchain-pi
 `create_chat` routes the supported native providers:
 
 ```python
-from langchain_pi import create_chat
+from open_langchain import create_chat
 
 codex = create_chat("openai-codex", "gpt-5.3-codex-spark")
 claude = create_chat("claude-code", "claude-sonnet-4-6")
@@ -35,7 +35,7 @@ go = create_chat("opencode-go", "glm-5", api_key="...")
 Or construct Codex directly:
 
 ```python
-from langchain_pi import ChatCodex
+from open_langchain import ChatCodex
 
 model = ChatCodex(
     model="gpt-5.3-codex-spark",
@@ -63,7 +63,7 @@ codex-login --device
 
 ```python
 from langchain_core.tools import tool
-from langchain_pi import ChatCodex
+from open_langchain import ChatCodex
 
 @tool
 def get_weather(city: str) -> str:
@@ -100,7 +100,7 @@ for chunk in model.stream("Write a haiku."):
 `langchain-openai`.
 
 ```python
-from langchain_pi import ChatOpencode
+from open_langchain import ChatOpencode
 
 free = ChatOpencode("deepseek-v4-flash-free")
 paid = ChatOpencode("glm-5")
@@ -118,7 +118,7 @@ billing requests against your Claude Code subscription — no API key. It reads 
 refreshes the token in place (with a `claude` CLI fallback).
 
 ```python
-from langchain_pi import ChatClaudeCode, create_chat
+from open_langchain import ChatClaudeCode, create_chat
 
 chat = create_chat("claude-code", "claude-sonnet-4-6")
 print(chat.invoke("Hello!").content)

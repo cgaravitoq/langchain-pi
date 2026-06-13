@@ -6,7 +6,7 @@ import hashlib
 import httpx
 import pytest
 
-from langchain_pi.oauth import (
+from open_langchain.oauth import (
     CodexOAuth,
     CodexOAuthError,
     create_state,
@@ -75,7 +75,7 @@ def test_exchange_code(tmp_path, monkeypatch):
         with httpx.Client(transport=httpx.MockTransport(handler)) as c:
             return c.post(url, **kwargs)
 
-    monkeypatch.setattr("langchain_pi.oauth.httpx.post", fake_post)
+    monkeypatch.setattr("open_langchain.oauth.httpx.post", fake_post)
     oauth = CodexOAuth(auth_path=str(tmp_path / "auth.json"))
     cred = oauth.exchange_code("code", "verifier", "redirect")
     assert cred["access"] == access
@@ -106,10 +106,10 @@ def test_device_login_poll_loop(tmp_path, monkeypatch):
         return httpx.Response(status, json=json_body)
 
     monkeypatch.setattr(
-        "langchain_pi.oauth.httpx.post",
+        "open_langchain.oauth.httpx.post",
         lambda url, **kwargs: post(str(url), **kwargs),
     )
-    monkeypatch.setattr("langchain_pi.oauth.time.sleep", lambda s: None)
+    monkeypatch.setattr("open_langchain.oauth.time.sleep", lambda s: None)
 
     oauth = CodexOAuth(auth_path=str(tmp_path / "auth.json"))
     prompts = []

@@ -7,7 +7,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from langchain_pi.auth import (
+from open_langchain.auth import (
     CodexAuth,
     CodexAuthError,
     extract_account_id,
@@ -89,7 +89,7 @@ def test_refresh_writes_back(auth_file, monkeypatch):
         with httpx.Client(transport=transport) as client:
             return client.post(url, **kwargs)
 
-    monkeypatch.setattr("langchain_pi.auth.httpx.post", fake_post)
+    monkeypatch.setattr("open_langchain.auth.httpx.post", fake_post)
 
     auth = CodexAuth(str(auth_file))
     cred = auth.get_access_token()

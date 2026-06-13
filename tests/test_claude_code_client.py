@@ -5,8 +5,8 @@ import json
 import httpx
 import pytest
 
-from langchain_pi.claude_code_auth import ClaudeCodeAuth
-from langchain_pi.claude_code_client import ClaudeCodeClient, build_headers
+from open_langchain.claude_code_auth import ClaudeCodeAuth
+from open_langchain.claude_code_client import ClaudeCodeClient, build_headers
 
 
 def test_build_headers_exact():
@@ -211,7 +211,7 @@ def test_401_refresh_retry(claude_creds_file, monkeypatch):
         return httpx.Response(200, content=_text_stream())
 
     monkeypatch.setattr(
-        "langchain_pi.claude_code_auth.httpx.post",
+        "open_langchain.claude_code_auth.httpx.post",
         lambda *a, **k: httpx.Response(
             200,
             json={"access_token": "fresh", "refresh_token": "r2", "expires_in": 3600},

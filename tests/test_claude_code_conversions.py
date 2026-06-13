@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
-from langchain_pi.claude_code_conversions import (
+from open_langchain.claude_code_conversions import (
     apply_claude_code_transforms,
     build_request_body,
     messages_to_anthropic,

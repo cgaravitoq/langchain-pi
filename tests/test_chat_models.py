@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from langchain_core.messages import AIMessageChunk, HumanMessage
 
-from langchain_pi.chat_models import ChatCodex
+from open_langchain.chat_models import ChatCodex
 
 
 class FakeClient:

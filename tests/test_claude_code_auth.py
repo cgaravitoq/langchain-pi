@@ -7,7 +7,7 @@ import time
 import httpx
 import pytest
 
-from langchain_pi.claude_code_auth import (
+from open_langchain.claude_code_auth import (
     ClaudeCodeAuth,
     ClaudeCodeAuthError,
     _parse_blob,
@@ -66,7 +66,7 @@ def test_no_refresh_when_fresh(claude_creds_file, monkeypatch):
     def boom(*a, **k):
         raise AssertionError("should not refresh a fresh token")
 
-    monkeypatch.setattr("langchain_pi.claude_code_auth.httpx.post", boom)
+    monkeypatch.setattr("open_langchain.claude_code_auth.httpx.post", boom)
     auth = ClaudeCodeAuth(str(claude_creds_file))
     assert auth.get_access_token() == "cc_access"
 
@@ -94,7 +94,7 @@ def test_refresh_posts_oauth_and_writes_back(tmp_path, monkeypatch):
             },
         )
 
-    monkeypatch.setattr("langchain_pi.claude_code_auth.httpx.post", fake_post)
+    monkeypatch.setattr("open_langchain.claude_code_auth.httpx.post", fake_post)
     auth = ClaudeCodeAuth(str(path))
     token = auth.get_access_token()
 
@@ -116,7 +116,7 @@ def test_refresh_falls_back_to_cli(tmp_path, monkeypatch):
     _write(path, expires=int(time.time() * 1000) - 1000)
 
     monkeypatch.setattr(
-        "langchain_pi.claude_code_auth.httpx.post",
+        "open_langchain.claude_code_auth.httpx.post",
         lambda *a, **k: httpx.Response(400, json={}),
     )
 
@@ -133,7 +133,7 @@ def test_refresh_failure_raises(tmp_path, monkeypatch):
     path = tmp_path / ".credentials.json"
     _write(path, expires=int(time.time() * 1000) - 1000)
     monkeypatch.setattr(
-        "langchain_pi.claude_code_auth.httpx.post",
+        "open_langchain.claude_code_auth.httpx.post",
         lambda *a, **k: httpx.Response(400, json={}),
     )
     monkeypatch.setattr(
@@ -162,7 +162,7 @@ def test_concurrent_refresh_dedupes(tmp_path, monkeypatch):
             },
         )
 
-    monkeypatch.setattr("langchain_pi.claude_code_auth.httpx.post", fake_post)
+    monkeypatch.setattr("open_langchain.claude_code_auth.httpx.post", fake_post)
 
     auth = ClaudeCodeAuth(str(path))
     expired = {

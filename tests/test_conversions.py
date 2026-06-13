@@ -9,14 +9,14 @@ from langchain_core.messages import (
     ToolMessage,
 )
 
-from langchain_pi.codex_conversions import (
+from open_langchain.codex_conversions import (
     build_request_body,
     messages_to_responses,
     to_tool_calls,
     to_usage_metadata,
     tool_to_responses,
 )
-from langchain_pi.models import (
+from open_langchain.models import (
     clamp_thinking_level,
     get_supported_thinking_levels,
     thinking_wire_value,

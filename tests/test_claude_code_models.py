@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from langchain_pi.claude_code_models import (
+from open_langchain.claude_code_models import (
     BASE_BETAS,
     CLAUDE_CODE_MODELS,
     compute_betas,

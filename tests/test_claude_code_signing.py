@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import re
 
-from langchain_pi.claude_code_signing import (
+from open_langchain.claude_code_signing import (
     BILLING_SALT,
     _compute_cch,
     _compute_version_suffix,
