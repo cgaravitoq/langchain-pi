@@ -124,14 +124,17 @@ chat = create_chat("claude-code", "claude-sonnet-4-6")
 print(chat.invoke("Hello!").content)
 
 # Or construct directly, with options:
-opus = ChatClaudeCode(model="claude-opus-4-8", reasoning="medium")
+opus = ChatClaudeCode(model="claude-opus-5", reasoning="medium")
 ```
 
-Models: `claude-opus-4-8`, `claude-opus-4-7`, `claude-sonnet-4-6`,
-`claude-haiku-4-5`. Reasoning uses adaptive thinking on Opus 4.8/4.7 and a token
-budget on Sonnet 4.6 (Haiku has no reasoning). The 1M-context beta is **opt-in**
-via `long_context=True`; the subscription rejects long-context requests without
-extra credits otherwise. Tool calling and streaming work as with `ChatCodex`.
+Models: `claude-opus-5`, `claude-fable-5`, `claude-opus-4-8`, `claude-opus-4-7`,
+`claude-sonnet-5`, `claude-sonnet-4-6`, `claude-haiku-4-5`. Reasoning uses
+adaptive thinking on the Claude 5 family and Opus 4.8/4.7, and a token budget on
+Sonnet 4.6 (Haiku has no reasoning). The Claude 5 models ship a 1M context
+window by default; for the older models the 1M-context beta is **opt-in** via
+`long_context=True`, since the subscription rejects long-context requests
+without extra credits otherwise. Tool calling and streaming work as with
+`ChatCodex`.
 
 > Using a subscription OAuth session from a third-party app may violate
 > Anthropic's terms and risk your account. See the

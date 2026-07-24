@@ -24,6 +24,11 @@ LONG_CONTEXT_BETAS = [
 # Insertion order matters: get_model_override returns the first key that is a
 # substring of the lowercased model id.
 MODEL_OVERRIDES: dict[str, dict] = {
+    # Claude 5 ships 1M context by default - no long-context beta needed.
+    "fable-5": {"adaptive_thinking": True},
+    "mythos-5": {"adaptive_thinking": True},
+    "opus-5": {"adaptive_thinking": True},
+    "sonnet-5": {"adaptive_thinking": True},
     "haiku": {"exclude": ["interleaved-thinking-2025-05-14"], "disable_effort": True},
     "4-6": {"long_context": True, "add": ["effort-2025-11-24"]},
     "4-7": {
@@ -48,6 +53,22 @@ DEFAULT_BUDGETS = {
 }
 
 CLAUDE_CODE_MODELS: dict[str, dict] = {
+    "claude-opus-5": {
+        "name": "Claude Opus 5 (Claude Code)",
+        "reasoning": True,
+        "input": ["text", "image"],
+        "cost": {"input": 5, "output": 25, "cache_read": 0.5, "cache_write": 6.25},
+        "context_window": 1000000,
+        "max_tokens": 128000,
+    },
+    "claude-fable-5": {
+        "name": "Claude Fable 5 (Claude Code)",
+        "reasoning": True,
+        "input": ["text", "image"],
+        "cost": {"input": 10, "output": 50, "cache_read": 1, "cache_write": 12.5},
+        "context_window": 1000000,
+        "max_tokens": 128000,
+    },
     "claude-opus-4-8": {
         "name": "Claude Opus 4.8 (Claude Code)",
         "reasoning": True,
@@ -61,6 +82,14 @@ CLAUDE_CODE_MODELS: dict[str, dict] = {
         "reasoning": True,
         "input": ["text", "image"],
         "cost": {"input": 5, "output": 25, "cache_read": 0.5, "cache_write": 6.25},
+        "context_window": 1000000,
+        "max_tokens": 128000,
+    },
+    "claude-sonnet-5": {
+        "name": "Claude Sonnet 5 (Claude Code)",
+        "reasoning": True,
+        "input": ["text", "image"],
+        "cost": {"input": 3, "output": 15, "cache_read": 0.3, "cache_write": 3.75},
         "context_window": 1000000,
         "max_tokens": 128000,
     },

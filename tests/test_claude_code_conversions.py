@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 from open_langchain.claude_code_conversions import (
@@ -172,6 +174,25 @@ def test_build_body_adaptive_thinking_opus():
     assert body["thinking"] == {"type": "adaptive"}
     assert body["output_config"] == {"effort": "medium"}
     assert "budget_tokens" not in str(body["thinking"])
+
+
+def test_build_body_adaptive_thinking_opus_5():
+    body = build_request_body(
+        "claude-opus-5", [], [{"role": "user", "content": "hi"}], reasoning="high"
+    )
+    assert body["thinking"] == {"type": "adaptive"}
+    assert body["output_config"] == {"effort": "high"}
+    assert "budget_tokens" not in json.dumps(body)
+
+
+def test_build_body_adaptive_thinking_claude_5_family():
+    for model in ("claude-fable-5", "claude-sonnet-5"):
+        body = build_request_body(
+            model, [], [{"role": "user", "content": "hi"}], reasoning="medium"
+        )
+        assert body["thinking"] == {"type": "adaptive"}
+        assert body["output_config"] == {"effort": "medium"}
+        assert "budget_tokens" not in json.dumps(body)
 
 
 def test_build_body_adaptive_minimal_maps_to_low():
