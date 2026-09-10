@@ -280,3 +280,10 @@ def test_usage_metadata():
     assert md["output_tokens"] == 5
     assert md["total_tokens"] == 15
     assert md["input_token_details"]["cache_read"] == 3
+
+
+def test_calculate_cost_counts_cache_write_toward_the_prompt():
+    base = calculate_cost("gpt-5.6-terra", {"input": 271000, "cache_write": 1000})
+    tier = calculate_cost("gpt-5.6-terra", {"input": 271000, "cache_write": 1001})
+    assert base == pytest.approx(0.5445)
+    assert tier == pytest.approx(1.089005)

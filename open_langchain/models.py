@@ -155,7 +155,11 @@ def thinking_wire_value(model: str, level: str) -> Optional[str]:
 def calculate_cost(model: str, usage: dict) -> float:
     meta = _model_meta(model)
     cost = meta.get("cost") or {}
-    prompt = (usage.get("input", 0) or 0) + (usage.get("cache_read", 0) or 0)
+    prompt = (
+        (usage.get("input", 0) or 0)
+        + (usage.get("cache_read", 0) or 0)
+        + (usage.get("cache_write", 0) or 0)
+    )
     for tier in meta.get("tiers") or []:
         if prompt > tier["context"]:
             cost = tier["cost"]
