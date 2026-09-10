@@ -334,3 +334,18 @@ def test_concurrent_refresh_dedupes(tmp_path, monkeypatch):
 
     assert calls["n"] == 1  # only one OAuth POST despite 5 concurrent refreshers
     assert results == ["shared_new"] * 5
+
+
+def test_falls_back_to_file_when_security_missing(monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setattr(sys, "platform", "darwin")
+
+    def no_security(*args, **kwargs):
+        raise FileNotFoundError("security")
+
+    monkeypatch.setattr(
+        "open_langchain.claude_code_auth.subprocess.run", no_security, raising=True
+    )
+    path = _home_creds(tmp_path)
+    _write(path, access="file_access")
+    assert ClaudeCodeAuth().get_access_token() == "file_access"
