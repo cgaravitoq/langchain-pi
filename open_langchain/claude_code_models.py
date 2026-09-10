@@ -5,7 +5,7 @@ from typing import Optional
 PROVIDER_ID = "claude-code"
 PROVIDER_NAME = "Claude Code (OAuth)"
 
-CC_VERSION = "2.1.112"
+CC_VERSION = "2.1.267"
 
 BASE_BETAS = [
     "claude-code-20250219",
@@ -66,6 +66,14 @@ CLAUDE_CODE_MODELS: dict[str, dict] = {
         "reasoning": True,
         "input": ["text", "image"],
         "cost": {"input": 10, "output": 50, "cache_read": 1, "cache_write": 12.5},
+        "context_window": 1000000,
+        "max_tokens": 128000,
+    },
+    "claude-fable-5-1": {
+        "name": "Claude Fable 5.1 (Claude Code)",
+        "reasoning": True,
+        "input": ["text", "image"],
+        "cost": {"input": 10, "output": 50, "cache_read": 0.25, "cache_write": 12.5},
         "context_window": 1000000,
         "max_tokens": 128000,
     },
