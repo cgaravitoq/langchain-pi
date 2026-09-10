@@ -165,7 +165,7 @@ class ClaudeCodeAuth:
             if oauth and oauth["expires_at"] > _now_ms() + REFRESH_LEEWAY_MS:
                 try:
                     self._store(oauth, source)
-                except (OSError, subprocess.SubprocessError):
+                except (OSError, subprocess.SubprocessError, ClaudeCodeAuthError):
                     pass
                 return oauth
 

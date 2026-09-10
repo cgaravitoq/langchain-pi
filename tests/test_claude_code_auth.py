@@ -382,3 +382,33 @@ def test_write_back_target_survives_a_concurrent_file_read(monkeypatch, tmp_path
     stored = json.loads(fake.written[0][fake.written[0].index("-w") + 1])
     assert stored["claudeAiOauth"]["accessToken"] == "new_access"
     assert json.loads(path.read_text())["claudeAiOauth"]["accessToken"] == "file_access"
+
+
+def test_rotated_token_survives_a_failed_keychain_account_lookup(monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setattr(sys, "platform", "darwin")
+    fake = _mock_security(
+        monkeypatch, _keychain_json(expires=int(time.time() * 1000) - 1000)
+    )
+
+    def no_account(args, **kwargs):
+        if args[1] == "find-generic-password" and "-w" not in args:
+            return subprocess.CompletedProcess(args, 44, "", "not found")
+        return fake(args, **kwargs)
+
+    monkeypatch.setattr(
+        "open_langchain.claude_code_auth.subprocess.run", no_account, raising=True
+    )
+    monkeypatch.setattr(
+        "open_langchain.claude_code_auth.httpx.post",
+        lambda url, **kwargs: httpx.Response(
+            200,
+            json={
+                "access_token": "new_access",
+                "refresh_token": "r2",
+                "expires_in": 3600,
+            },
+        ),
+    )
+    assert ClaudeCodeAuth().get_access_token() == "new_access"
+    assert fake.written == []
