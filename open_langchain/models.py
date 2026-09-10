@@ -28,19 +28,19 @@ OPENAI_CODEX_MODELS = {
         "name": "GPT-5.6 Sol",
         "input": ["text", "image"],
         "context_window": 1050000,
-        "cost": {"input": 5, "output": 30, "cache_read": 0.5, "cache_write": 0},
+        "cost": {"input": 4, "output": 20, "cache_read": 0.4, "cache_write": 5},
     },
     "gpt-5.6-terra": {
         "name": "GPT-5.6 Terra",
         "input": ["text", "image"],
         "context_window": 1050000,
-        "cost": {"input": 2.5, "output": 15, "cache_read": 0.25, "cache_write": 0},
+        "cost": {"input": 2, "output": 12, "cache_read": 0.2, "cache_write": 2.5},
     },
     "gpt-5.6-luna": {
         "name": "GPT-5.6 Luna",
         "input": ["text", "image"],
         "context_window": 1050000,
-        "cost": {"input": 1, "output": 6, "cache_read": 0.1, "cache_write": 0},
+        "cost": {"input": 0.2, "output": 1.2, "cache_read": 0.02, "cache_write": 0.25},
     },
     "gpt-6-astra": {
         "name": "GPT-6 Astra",

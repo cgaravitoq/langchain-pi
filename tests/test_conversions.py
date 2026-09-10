@@ -175,11 +175,11 @@ def test_codex_catalog_matches_chatgpt_account_support():
 
 def test_codex_5_6_pricing_and_context():
     expected = {
-        "gpt-5.6-sol": ("GPT-5.6 Sol", 5, 30, 0.5),
-        "gpt-5.6-terra": ("GPT-5.6 Terra", 2.5, 15, 0.25),
-        "gpt-5.6-luna": ("GPT-5.6 Luna", 1, 6, 0.1),
+        "gpt-5.6-sol": ("GPT-5.6 Sol", 4, 20, 0.4, 5),
+        "gpt-5.6-terra": ("GPT-5.6 Terra", 2, 12, 0.2, 2.5),
+        "gpt-5.6-luna": ("GPT-5.6 Luna", 0.2, 1.2, 0.02, 0.25),
     }
-    for model, (name, cost_in, cost_out, cache_read) in expected.items():
+    for model, (name, cost_in, cost_out, cache_read, cache_write) in expected.items():
         meta = OPENAI_CODEX_MODELS[model]
         assert meta["name"] == name
         assert meta["input"] == ["text", "image"]
@@ -188,7 +188,7 @@ def test_codex_5_6_pricing_and_context():
             "input": cost_in,
             "output": cost_out,
             "cache_read": cache_read,
-            "cache_write": 0,
+            "cache_write": cache_write,
         }
 
 
@@ -206,7 +206,7 @@ def test_codex_gpt_6_astra_matches_models_dev():
 
 def test_calculate_cost_uses_catalog_pricing():
     cost = calculate_cost("gpt-5.6-luna", {"input": 1_000_000, "output": 1_000_000})
-    assert cost == 7.0
+    assert cost == 1.4
 
 
 def test_to_tool_calls_parses_json_args():
