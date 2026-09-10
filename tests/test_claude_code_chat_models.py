@@ -142,6 +142,14 @@ def test_billing_header_in_built_body():
     )
 
 
+def test_billing_header_carries_cc_version(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_CLI_VERSION", raising=False)
+    llm = ChatClaudeCode(model="claude-sonnet-4-6")
+    fake = _attach(llm, [{"type": "done", "stop_reason": "stop", "usage": None}])
+    llm._generate([HumanMessage(content="hi")])
+    assert "cc_version=2.1.267." in fake.last_body["system"][0]["text"]
+
+
 def test_system_field_moved_into_first_user():
     llm = ChatClaudeCode(model="claude-sonnet-4-6", system="You are a pirate.")
     fake = _attach(llm, [{"type": "done", "stop_reason": "stop", "usage": None}])
