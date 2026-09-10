@@ -50,6 +50,7 @@ Codex models: `gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna`, `gpt-6-astra`,
 `gpt-5.5`, `gpt-5.3-codex-spark`. As of 2026-09 the ChatGPT account only serves
 these; older GPT-5.x ids return `400 not supported when using Codex with a
 ChatGPT account`.
+`calculate_cost` follows models.dev pricing, including the long-context tier that bills the whole request at the higher rate once the prompt exceeds 272k tokens.
 Ids outside the catalog are still sent to the API, but `calculate_cost` prices
 them as unknown and returns 0.
 
