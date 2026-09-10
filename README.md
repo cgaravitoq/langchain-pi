@@ -107,8 +107,7 @@ paid = ChatOpencode("minimax-m3", api_key="...")
 go = ChatOpencode("minimax-m3", tier="go", api_key="...")
 ```
 
-Free models include `nemotron-3.5-lightning-free`, `big-pickle`, `mimo-v2.5-free`, and
-`nemotron-3-super-free`.
+Free models include `nemotron-3.5-lightning-free`, `big-pickle`, and `mimo-v2.5-free`.
 
 ## Claude Code (Anthropic subscription)
 
