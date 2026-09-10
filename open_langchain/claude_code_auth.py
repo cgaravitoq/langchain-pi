@@ -116,24 +116,23 @@ class ClaudeCodeAuth:
     def __init__(self, creds_path: Optional[str] = None) -> None:
         self.path = credentials_file_path(creds_path)
         self._explicit_path = creds_path is not None
-        self._source = "file"
 
     def read(self) -> Optional[dict]:
+        return self._read_with_source()[0]
+
+    def _read_with_source(self) -> tuple[Optional[dict], str]:
         if not self._explicit_path and sys.platform == "darwin":
             raw = _keychain_read()
             creds = _parse_blob(raw) if raw else None
             if creds:
-                self._source = "keychain"
-                return creds
+                return creds, "keychain"
         if not self.path.exists():
-            return None
+            return None, "file"
         try:
             creds = _parse_blob(self.path.read_text())
         except OSError:
-            return None
-        if creds:
-            self._source = "file"
-        return creds
+            return None, "file"
+        return creds, "file"
 
     def get_credentials(self) -> dict:
         creds = self.read()
@@ -148,7 +147,7 @@ class ClaudeCodeAuth:
 
     def refresh(self, current: Optional[dict] = None, *, force: bool = False) -> dict:
         with _refresh_lock:
-            disk = self.read()
+            disk, source = self._read_with_source()
             latest = disk or current
             if not latest:
                 raise ClaudeCodeAuthError(self._missing_message())
@@ -165,7 +164,7 @@ class ClaudeCodeAuth:
             oauth = self._refresh_via_oauth(latest["refresh"])
             if oauth and oauth["expires_at"] > _now_ms() + REFRESH_LEEWAY_MS:
                 try:
-                    self._store(oauth)
+                    self._store(oauth, source)
                 except (OSError, subprocess.SubprocessError):
                     pass
                 return oauth
@@ -255,8 +254,8 @@ class ClaudeCodeAuth:
             "Run `claude` to authenticate first."
         )
 
-    def _store(self, creds: dict) -> None:
-        if self._source == "keychain":
+    def _store(self, creds: dict, source: str) -> None:
+        if source == "keychain":
             self._write_back_keychain(creds)
         else:
             self._write_back(creds)

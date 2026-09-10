@@ -349,3 +349,36 @@ def test_falls_back_to_file_when_security_missing(monkeypatch, tmp_path):
     path = _home_creds(tmp_path)
     _write(path, access="file_access")
     assert ClaudeCodeAuth().get_access_token() == "file_access"
+
+
+def test_write_back_target_survives_a_concurrent_file_read(monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setattr(sys, "platform", "darwin")
+    fake = _mock_security(
+        monkeypatch, _keychain_json(expires=int(time.time() * 1000) - 1000)
+    )
+    path = _home_creds(tmp_path)
+    _write(path, access="file_access")
+    auth = ClaudeCodeAuth()
+
+    def fake_post(url, **kwargs):
+        # a concurrent caller resolves the file source while we hold the lock
+        blob, fake.blob = fake.blob, None
+        assert auth.read()["access"] == "file_access"
+        fake.blob = blob
+        return httpx.Response(
+            200,
+            json={
+                "access_token": "new_access",
+                "refresh_token": "r2",
+                "expires_in": 3600,
+            },
+        )
+
+    monkeypatch.setattr("open_langchain.claude_code_auth.httpx.post", fake_post)
+    assert auth.get_access_token() == "new_access"
+
+    assert len(fake.written) == 1
+    stored = json.loads(fake.written[0][fake.written[0].index("-w") + 1])
+    assert stored["claudeAiOauth"]["accessToken"] == "new_access"
+    assert json.loads(path.read_text())["claudeAiOauth"]["accessToken"] == "file_access"
