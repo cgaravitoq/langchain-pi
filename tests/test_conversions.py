@@ -190,6 +190,7 @@ def test_codex_5_6_pricing_and_context():
             "cache_read": cache_read,
             "cache_write": cache_write,
         }
+    assert OPENAI_CODEX_MODELS["gpt-5.5"]["context_window"] == 1050000
 
 
 def test_codex_gpt_6_astra_matches_models_dev():

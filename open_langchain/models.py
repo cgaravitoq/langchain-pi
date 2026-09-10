@@ -21,7 +21,7 @@ OPENAI_CODEX_MODELS = {
     "gpt-5.5": {
         "name": "GPT-5.5",
         "input": ["text", "image"],
-        "context_window": 272000,
+        "context_window": 1050000,
         "cost": {"input": 5, "output": 30, "cache_read": 0.5, "cache_write": 0},
     },
     "gpt-5.6-sol": {
