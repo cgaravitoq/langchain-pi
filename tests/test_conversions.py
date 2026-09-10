@@ -208,7 +208,7 @@ def test_codex_gpt_6_astra_matches_models_dev():
 
 def test_calculate_cost_uses_catalog_pricing():
     cost = calculate_cost("gpt-5.6-luna", {"input": 1_000_000, "output": 1_000_000})
-    assert cost == 2.2
+    assert cost == pytest.approx(2.2)
 
 
 @pytest.mark.parametrize(
@@ -241,24 +241,24 @@ def test_codex_tiers_match_models_dev(model, expected):
 
 def test_calculate_cost_stays_on_base_rate_at_the_tier_context():
     cost = calculate_cost("gpt-5.6-luna", {"input": 272000})
-    assert cost == 0.054400000000000004
+    assert cost == pytest.approx(0.0544)
 
 
 def test_calculate_cost_jumps_to_tier_rate_above_the_tier_context():
     cost = calculate_cost("gpt-5.6-luna", {"input": 272001})
-    assert cost == 0.1088004
+    assert cost == pytest.approx(0.1088004)
 
 
 def test_calculate_cost_counts_cache_read_toward_the_prompt():
     base = calculate_cost("gpt-5.6-luna", {"input": 200000, "cache_read": 72000})
     tier = calculate_cost("gpt-5.6-luna", {"input": 200000, "cache_read": 72001})
-    assert base == 0.04144
-    assert tier == 0.08288004
+    assert base == pytest.approx(0.04144)
+    assert tier == pytest.approx(0.08288004)
 
 
 def test_calculate_cost_ignores_tiers_for_models_without_them():
     cost = calculate_cost("gpt-5.3-codex-spark", {"input": 272001, "output": 10})
-    assert cost == 0.47614175
+    assert cost == pytest.approx(0.47614175)
 
 
 def test_to_tool_calls_parses_json_args():
