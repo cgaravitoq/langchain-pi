@@ -46,6 +46,10 @@ model = ChatCodex(
 print(model.invoke("Hello!").content)
 ```
 
+Codex models: `gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna`, `gpt-6-astra`,
+`gpt-5.5`, `gpt-5.3-codex-spark`. The ChatGPT account only serves these; older
+GPT-5.x ids return `400 not supported when using Codex with a ChatGPT account`.
+
 ## Codex Auth
 
 `ChatCodex` reads the same `~/.pi/agent/auth.json` credential shape under
@@ -70,7 +74,7 @@ def get_weather(city: str) -> str:
     """Get the current weather for a city."""
     return f"It is sunny in {city}, 24C."
 
-model = ChatCodex(model="gpt-5.3-codex").bind_tools([get_weather])
+model = ChatCodex(model="gpt-5.5").bind_tools([get_weather])
 msg = model.invoke("What's the weather in Paris?")
 print(msg.tool_calls)
 ```
@@ -78,7 +82,7 @@ print(msg.tool_calls)
 `tool_choice` is passed through to the Codex Responses API:
 
 ```python
-forced = ChatCodex(model="gpt-5.3-codex").bind_tools(
+forced = ChatCodex(model="gpt-5.5").bind_tools(
     [get_weather],
     tool_choice={"type": "function", "name": "get_weather"},
 )
@@ -127,14 +131,18 @@ print(chat.invoke("Hello!").content)
 opus = ChatClaudeCode(model="claude-opus-5", reasoning="medium")
 ```
 
-Models: `claude-opus-5`, `claude-fable-5`, `claude-opus-4-8`, `claude-opus-4-7`,
-`claude-sonnet-5`, `claude-sonnet-4-6`, `claude-haiku-4-5`. Reasoning uses
-adaptive thinking on the Claude 5 family and Opus 4.8/4.7, and a token budget on
-Sonnet 4.6 (Haiku has no reasoning). The Claude 5 models ship a 1M context
-window by default; for the older models the 1M-context beta is **opt-in** via
-`long_context=True`, since the subscription rejects long-context requests
-without extra credits otherwise. Tool calling and streaming work as with
+Models: `claude-opus-5`, `claude-fable-5-1`, `claude-fable-5`, `claude-opus-4-8`,
+`claude-opus-4-7`, `claude-sonnet-5`, `claude-sonnet-4-6`, `claude-haiku-4-5`.
+Reasoning uses adaptive thinking on the Claude 5 family and Opus 4.8/4.7, and a
+token budget on Sonnet 4.6 (Haiku has no reasoning). The Claude 5 models ship a
+1M context window by default; for the older models the 1M-context beta is
+**opt-in** via `long_context=True`, since the subscription rejects long-context
+requests without extra credits otherwise. Tool calling and streaming work as with
 `ChatCodex`.
+
+`tool_choice` is forwarded to the Messages API unchanged. `claude-fable-5-1`
+rejects a forced tool choice - `"any"` or a named tool - with a 400, so use
+`tool_choice="auto"` with that model.
 
 > Using a subscription OAuth session from a third-party app may violate
 > Anthropic's terms and risk your account. See the
