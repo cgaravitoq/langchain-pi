@@ -106,6 +106,19 @@ def test_user_supplied_default_headers_win(wire: Build):
     assert requests[0].headers["User-Agent"] == "custom/9.9"
 
 
+def test_user_supplied_default_headers_win_case_insensitively(wire: Build):
+    model, requests = wire(
+        model="m",
+        default_headers={
+            "X-OpenCode-Session": "custom-session",
+            "user-agent": "custom/9.9",
+        },
+    )
+    assert model.invoke("hi").content == "ok"
+    assert requests[0].headers["x-opencode-session"] == "custom-session"
+    assert requests[0].headers["user-agent"] == "custom/9.9"
+
+
 def test_anonymous_branch_blanks_user_supplied_authorization(wire: Build):
     model, requests = wire(
         model="m", default_headers={"Authorization": "Bearer leaked"}

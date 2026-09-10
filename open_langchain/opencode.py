@@ -35,8 +35,13 @@ class ChatOpencode(ChatOpenAI):
         headers = {
             "x-opencode-session": str(uuid.uuid4()),
             "User-Agent": _client_user_agent(),
-            **kwargs.pop("default_headers", {}),
         }
+        # Header names are case-insensitive, but the merge below (and the one the
+        # OpenAI client does with its own defaults) is not: reuse our casing so a
+        # user key overrides rather than duplicates.
+        canonical = {name.lower(): name for name in headers}
+        for name, value in kwargs.pop("default_headers", {}).items():
+            headers[canonical.get(name.lower(), name)] = value
         if key:
             super().__init__(
                 model=model,
