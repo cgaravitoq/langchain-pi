@@ -28,8 +28,8 @@ from open_langchain import create_chat
 
 codex = create_chat("openai-codex", "gpt-5.3-codex-spark")
 claude = create_chat("claude-code", "claude-sonnet-4-6")
-free = create_chat("opencode", "deepseek-v4-flash-free")
-go = create_chat("opencode-go", "glm-5", api_key="...")
+free = create_chat("opencode", "nemotron-3.5-lightning-free")
+go = create_chat("opencode-go", "minimax-m3", api_key="...")
 ```
 
 Or construct Codex directly:
@@ -102,13 +102,12 @@ for chunk in model.stream("Write a haiku."):
 ```python
 from open_langchain import ChatOpencode
 
-free = ChatOpencode("deepseek-v4-flash-free")
-paid = ChatOpencode("glm-5")
-go = ChatOpencode("glm-5", tier="go")
+free = ChatOpencode("nemotron-3.5-lightning-free")
+paid = ChatOpencode("minimax-m3", api_key="...")
+go = ChatOpencode("minimax-m3", tier="go", api_key="...")
 ```
 
-Free models include `deepseek-v4-flash-free`, `big-pickle`, `mimo-v2.5-free`, and
-`nemotron-3-super-free`.
+Free models include `nemotron-3.5-lightning-free`, `big-pickle`, and `mimo-v2.5-free`.
 
 ## Claude Code (Anthropic subscription)
 

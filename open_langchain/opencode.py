@@ -1,12 +1,22 @@
 from __future__ import annotations
 
 import os
+import uuid
+from importlib.metadata import PackageNotFoundError, version
 from typing import Any, Optional
 
 from langchain_openai import ChatOpenAI
 
 ZEN_BASE_URL = "https://opencode.ai/zen/v1"
 ZEN_GO_BASE_URL = "https://opencode.ai/zen/go/v1"
+
+
+def _client_user_agent() -> str:
+    try:
+        package_version = version("open-langchain")
+    except PackageNotFoundError:
+        package_version = "dev"
+    return f"open-langchain/{package_version}"
 
 
 class ChatOpencode(ChatOpenAI):
@@ -22,11 +32,27 @@ class ChatOpencode(ChatOpenAI):
     ) -> None:
         key = api_key or os.environ.get("OPENCODE_API_KEY")
         base = ZEN_GO_BASE_URL if tier == "go" else ZEN_BASE_URL
+        headers = {
+            "x-opencode-session": str(uuid.uuid4()),
+            "User-Agent": _client_user_agent(),
+        }
+        # Header names are case-insensitive, but the merge below (and the one the
+        # OpenAI client does with its own defaults) is not: reuse our casing so a
+        # user key overrides rather than duplicates.
+        canonical = {name.lower(): name for name in (*headers, "Authorization")}
+        for name, value in kwargs.pop("default_headers", {}).items():
+            headers[canonical.get(name.lower(), name)] = value
         if key:
-            super().__init__(model=model, api_key=key, base_url=base, **kwargs)
+            super().__init__(
+                model=model,
+                api_key=key,
+                base_url=base,
+                default_headers=headers,
+                **kwargs,
+            )
         else:
             # No key → anonymous free tier (blank Authorization); paid needs a key.
-            headers = {**kwargs.pop("default_headers", {}), "Authorization": ""}
+            headers["Authorization"] = ""
             super().__init__(
                 model=model,
                 api_key="anonymous",
