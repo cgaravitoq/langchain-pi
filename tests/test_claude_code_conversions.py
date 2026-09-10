@@ -186,7 +186,7 @@ def test_build_body_adaptive_thinking_opus_5():
 
 
 def test_build_body_adaptive_thinking_claude_5_family():
-    for model in ("claude-fable-5", "claude-sonnet-5"):
+    for model in ("claude-fable-5", "claude-fable-5-1", "claude-sonnet-5"):
         body = build_request_body(
             model, [], [{"role": "user", "content": "hi"}], reasoning="medium"
         )

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "open-langchain"
-version = "0.7.0"
+version = "0.8.0"
 description = "Native LangChain chat models for the Claude Code (Anthropic) and OpenAI Codex subscription OAuth sessions, plus OpenCode Zen/Go — no Node sidecar."
 readme = "README.md"
 license = { text = "MIT" }
