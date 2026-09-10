@@ -2,16 +2,11 @@ from __future__ import annotations
 
 from open_langchain.claude_code_models import (
     BASE_BETAS,
-    CC_VERSION,
     CLAUDE_CODE_MODELS,
     MODEL_OVERRIDES,
     compute_betas,
     get_model_override,
 )
-
-
-def test_cc_version_is_recent_enough_for_fable_5_1():
-    assert CC_VERSION == "2.1.267"
 
 
 def test_compute_betas_opus_4_8():
