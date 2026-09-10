@@ -119,9 +119,8 @@ def test_user_supplied_default_headers_win_case_insensitively(wire: Build):
     assert requests[0].headers["user-agent"] == "custom/9.9"
 
 
-def test_anonymous_branch_blanks_user_supplied_authorization(wire: Build):
-    model, requests = wire(
-        model="m", default_headers={"Authorization": "Bearer leaked"}
-    )
+@pytest.mark.parametrize("name", ["Authorization", "authorization", "AUTHORIZATION"])
+def test_anonymous_branch_blanks_user_supplied_authorization(wire: Build, name: str):
+    model, requests = wire(model="m", default_headers={name: "Bearer leaked"})
     assert model.invoke("hi").content == "ok"
-    assert requests[0].headers["authorization"] == ""
+    assert requests[0].headers.get_list("authorization") == [""]
