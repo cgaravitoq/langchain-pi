@@ -97,7 +97,7 @@ CLAUDE_CODE_MODELS: dict[str, dict] = {
         "name": "Claude Sonnet 5 (Claude Code)",
         "reasoning": True,
         "input": ["text", "image"],
-        "cost": {"input": 3, "output": 15, "cache_read": 0.3, "cache_write": 3.75},
+        "cost": {"input": 2, "output": 10, "cache_read": 0.2, "cache_write": 2.5},
         "context_window": 1000000,
         "max_tokens": 128000,
     },

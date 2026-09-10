@@ -126,10 +126,10 @@ def test_claude_5_registry_metadata():
     sonnet = CLAUDE_CODE_MODELS["claude-sonnet-5"]
     assert sonnet["name"] == "Claude Sonnet 5 (Claude Code)"
     assert sonnet["cost"] == {
-        "input": 3,
-        "output": 15,
-        "cache_read": 0.3,
-        "cache_write": 3.75,
+        "input": 2,
+        "output": 10,
+        "cache_read": 0.2,
+        "cache_write": 2.5,
     }
     for model in (opus, fable, fable_5_1, sonnet):
         assert model["reasoning"] is True
