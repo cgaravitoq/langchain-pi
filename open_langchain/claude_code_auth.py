@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -17,6 +19,7 @@ OAUTH_CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
 REFRESH_LEEWAY_MS = 60_000
 REFRESH_TIMEOUT = 30.0
 CLI_TIMEOUT = 20.0
+KEYCHAIN_SERVICE = "Claude Code-credentials"
 
 
 class ClaudeCodeAuthError(Exception):
@@ -37,6 +40,49 @@ def credentials_file_path(explicit: Optional[str] = None) -> Path:
     if explicit:
         return Path(explicit).expanduser()
     return Path.home() / ".claude" / ".credentials.json"
+
+
+def _keychain_read() -> Optional[str]:
+    result = subprocess.run(
+        ["security", "find-generic-password", "-s", KEYCHAIN_SERVICE, "-w"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return None
+    return result.stdout
+
+
+def _keychain_account() -> str:
+    result = subprocess.run(
+        ["security", "find-generic-password", "-s", KEYCHAIN_SERVICE],
+        capture_output=True,
+        text=True,
+    )
+    match = re.search(r'"acct"<blob>="(.*)"', result.stdout or "")
+    if result.returncode != 0 or match is None:
+        raise ClaudeCodeAuthError(
+            f"Failed to read the account of the {KEYCHAIN_SERVICE!r} keychain item. "
+            "Run `claude` once to re-authenticate."
+        )
+    return match.group(1)
+
+
+def _merge_blob(existing: Optional[str], creds: dict) -> dict:
+    blob: dict = {}
+    if existing:
+        try:
+            parsed = json.loads(existing)
+        except (json.JSONDecodeError, ValueError):
+            parsed = None
+        if isinstance(parsed, dict):
+            blob = parsed
+    blob["claudeAiOauth"] = {
+        "accessToken": creds["access"],
+        "refreshToken": creds["refresh"],
+        "expiresAt": creds["expires_at"],
+    }
+    return blob
 
 
 def _parse_blob(raw: str) -> Optional[dict]:
@@ -66,22 +112,30 @@ def _parse_blob(raw: str) -> Optional[dict]:
 class ClaudeCodeAuth:
     def __init__(self, creds_path: Optional[str] = None) -> None:
         self.path = credentials_file_path(creds_path)
+        self._explicit_path = creds_path is not None
+        self._source = "file"
 
     def read(self) -> Optional[dict]:
+        if not self._explicit_path and sys.platform == "darwin":
+            raw = _keychain_read()
+            creds = _parse_blob(raw) if raw else None
+            if creds:
+                self._source = "keychain"
+                return creds
         if not self.path.exists():
             return None
         try:
-            return _parse_blob(self.path.read_text())
+            creds = _parse_blob(self.path.read_text())
         except OSError:
             return None
+        if creds:
+            self._source = "file"
+        return creds
 
     def get_credentials(self) -> dict:
         creds = self.read()
         if not creds:
-            raise ClaudeCodeAuthError(
-                f"Claude Code credentials not found at {self.path}. "
-                "Run `claude` to authenticate first."
-            )
+            raise ClaudeCodeAuthError(self._missing_message())
         if creds["expires_at"] > _now_ms() + REFRESH_LEEWAY_MS:
             return creds
         return self.refresh(creds)
@@ -94,10 +148,7 @@ class ClaudeCodeAuth:
             disk = self.read()
             latest = disk or current
             if not latest:
-                raise ClaudeCodeAuthError(
-                    f"Claude Code credentials not found at {self.path}. "
-                    "Run `claude` to authenticate first."
-                )
+                raise ClaudeCodeAuthError(self._missing_message())
             fresh = latest["expires_at"] > _now_ms() + REFRESH_LEEWAY_MS
             # A concurrent caller (or the proactive path) may have already rotated
             # the token while we waited for the lock; reuse it instead of POSTing
@@ -111,8 +162,8 @@ class ClaudeCodeAuth:
             oauth = self._refresh_via_oauth(latest["refresh"])
             if oauth and oauth["expires_at"] > _now_ms() + REFRESH_LEEWAY_MS:
                 try:
-                    self._write_back(oauth)
-                except OSError:
+                    self._store(oauth)
+                except (OSError, subprocess.SubprocessError):
                     pass
                 return oauth
 
@@ -192,31 +243,61 @@ class ClaudeCodeAuth:
         except OSError as exc:
             return f"claude CLI: {exc}"
 
+    def _missing_message(self) -> str:
+        where = str(self.path)
+        if not self._explicit_path and sys.platform == "darwin":
+            where = f"the macOS keychain or {self.path}"
+        return (
+            f"Claude Code credentials not found in {where}. "
+            "Run `claude` to authenticate first."
+        )
+
+    def _store(self, creds: dict) -> None:
+        if self._source == "keychain":
+            self._write_back_keychain(creds)
+        else:
+            self._write_back(creds)
+
+    def _write_back_keychain(self, creds: dict) -> None:
+        account = _keychain_account()
+        # `security -w` hex-encodes any stored password containing control
+        # characters, so the blob must stay on a single line.
+        updated = json.dumps(
+            _merge_blob(_keychain_read(), creds), separators=(",", ":")
+        )
+        subprocess.run(
+            [
+                "security",
+                "add-generic-password",
+                "-U",
+                "-s",
+                KEYCHAIN_SERVICE,
+                "-a",
+                account,
+                "-w",
+                updated,
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
     def _write_back(self, creds: dict) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         try:
             os.chmod(self.path.parent, 0o700)
         except OSError:
             pass
-        existing: dict = {}
+        existing: Optional[str] = None
         if self.path.exists():
             try:
-                loaded = json.loads(self.path.read_text())
-                if isinstance(loaded, dict):
-                    existing = loaded
-            except (OSError, json.JSONDecodeError, ValueError):
-                existing = {}
-        updated = {
-            **existing,
-            "claudeAiOauth": {
-                "accessToken": creds["access"],
-                "refreshToken": creds["refresh"],
-                "expiresAt": creds["expires_at"],
-            },
-        }
+                existing = self.path.read_text()
+            except OSError:
+                existing = None
+        updated = json.dumps(_merge_blob(existing, creds), indent=2)
         tmp = self.path.with_name(f"{self.path.name}.{os.getpid()}.{_now_ms()}.tmp")
         try:
-            tmp.write_text(json.dumps(updated, indent=2))
+            tmp.write_text(updated)
             os.chmod(tmp, 0o600)
             os.replace(tmp, self.path)
         except OSError:
