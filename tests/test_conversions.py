@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+import pytest
 from langchain_core.messages import (
     AIMessage,
     HumanMessage,
@@ -207,7 +208,57 @@ def test_codex_gpt_6_astra_matches_models_dev():
 
 def test_calculate_cost_uses_catalog_pricing():
     cost = calculate_cost("gpt-5.6-luna", {"input": 1_000_000, "output": 1_000_000})
-    assert cost == 1.4
+    assert cost == pytest.approx(2.2)
+
+
+@pytest.mark.parametrize(
+    ("model", "expected"),
+    [
+        ("gpt-5.5", {"input": 10, "output": 45, "cache_read": 1}),
+        (
+            "gpt-5.6-sol",
+            {"input": 8, "output": 30, "cache_read": 0.8, "cache_write": 10},
+        ),
+        (
+            "gpt-5.6-terra",
+            {"input": 4, "output": 18, "cache_read": 0.4, "cache_write": 5},
+        ),
+        (
+            "gpt-5.6-luna",
+            {"input": 0.4, "output": 1.8, "cache_read": 0.04, "cache_write": 0.5},
+        ),
+        (
+            "gpt-6-astra",
+            {"input": 20, "output": 75, "cache_read": 2, "cache_write": 25},
+        ),
+    ],
+)
+def test_codex_tiers_match_models_dev(model, expected):
+    assert OPENAI_CODEX_MODELS[model]["tiers"] == [
+        {"context": 272000, "cost": expected}
+    ]
+
+
+def test_calculate_cost_stays_on_base_rate_at_the_tier_context():
+    cost = calculate_cost("gpt-5.6-luna", {"input": 272000})
+    assert cost == pytest.approx(0.0544)
+
+
+def test_calculate_cost_jumps_to_tier_rate_above_the_tier_context():
+    cost = calculate_cost("gpt-5.6-luna", {"input": 272001})
+    assert cost == pytest.approx(0.1088004)
+
+
+def test_calculate_cost_counts_cache_read_toward_the_prompt():
+    base = calculate_cost("gpt-5.6-luna", {"input": 200000, "cache_read": 72000})
+    tier = calculate_cost("gpt-5.6-luna", {"input": 200000, "cache_read": 72001})
+    assert base == pytest.approx(0.04144)
+    assert tier == pytest.approx(0.08288004)
+
+
+def test_calculate_cost_ignores_tiers_for_models_without_them():
+    cost = calculate_cost("gpt-5.3-codex-spark", {"input": 272001, "output": 10})
+    assert cost == pytest.approx(0.47614175)
 
 
 def test_to_tool_calls_parses_json_args():
@@ -229,3 +280,15 @@ def test_usage_metadata():
     assert md["output_tokens"] == 5
     assert md["total_tokens"] == 15
     assert md["input_token_details"]["cache_read"] == 3
+
+
+def test_calculate_cost_counts_cache_write_toward_the_prompt():
+    base = calculate_cost("gpt-5.6-terra", {"input": 271000, "cache_write": 1000})
+    tier = calculate_cost("gpt-5.6-terra", {"input": 271000, "cache_write": 1001})
+    assert base == pytest.approx(0.5445)
+    assert tier == pytest.approx(1.089005)
+
+
+def test_calculate_cost_ignores_output_tokens_for_the_tier():
+    cost = calculate_cost("gpt-5.6-luna", {"input": 200000, "output": 100000})
+    assert cost == pytest.approx(0.16)

@@ -23,30 +23,80 @@ OPENAI_CODEX_MODELS = {
         "input": ["text", "image"],
         "context_window": 1050000,
         "cost": {"input": 5, "output": 30, "cache_read": 0.5, "cache_write": 0},
+        "tiers": [
+            {
+                "context": 272000,
+                "cost": {"input": 10, "output": 45, "cache_read": 1},
+            }
+        ],
     },
     "gpt-5.6-sol": {
         "name": "GPT-5.6 Sol",
         "input": ["text", "image"],
         "context_window": 1050000,
         "cost": {"input": 4, "output": 20, "cache_read": 0.4, "cache_write": 5},
+        "tiers": [
+            {
+                "context": 272000,
+                "cost": {
+                    "input": 8,
+                    "output": 30,
+                    "cache_read": 0.8,
+                    "cache_write": 10,
+                },
+            }
+        ],
     },
     "gpt-5.6-terra": {
         "name": "GPT-5.6 Terra",
         "input": ["text", "image"],
         "context_window": 1050000,
         "cost": {"input": 2, "output": 12, "cache_read": 0.2, "cache_write": 2.5},
+        "tiers": [
+            {
+                "context": 272000,
+                "cost": {
+                    "input": 4,
+                    "output": 18,
+                    "cache_read": 0.4,
+                    "cache_write": 5,
+                },
+            }
+        ],
     },
     "gpt-5.6-luna": {
         "name": "GPT-5.6 Luna",
         "input": ["text", "image"],
         "context_window": 1050000,
         "cost": {"input": 0.2, "output": 1.2, "cache_read": 0.02, "cache_write": 0.25},
+        "tiers": [
+            {
+                "context": 272000,
+                "cost": {
+                    "input": 0.4,
+                    "output": 1.8,
+                    "cache_read": 0.04,
+                    "cache_write": 0.5,
+                },
+            }
+        ],
     },
     "gpt-6-astra": {
         "name": "GPT-6 Astra",
         "input": ["text", "image"],
         "context_window": 1050000,
         "cost": {"input": 10, "output": 50, "cache_read": 1, "cache_write": 12.5},
+        "tiers": [
+            {
+                "context": 272000,
+                "cost": {
+                    "input": 20,
+                    "output": 75,
+                    "cache_read": 2,
+                    "cache_write": 25,
+                },
+            }
+        ],
     },
 }
 
@@ -103,7 +153,17 @@ def thinking_wire_value(model: str, level: str) -> Optional[str]:
 
 
 def calculate_cost(model: str, usage: dict) -> float:
-    cost = _model_meta(model).get("cost") or {}
+    meta = _model_meta(model)
+    cost = meta.get("cost") or {}
+    prompt = (
+        (usage.get("input", 0) or 0)
+        + (usage.get("cache_read", 0) or 0)
+        + (usage.get("cache_write", 0) or 0)
+    )
+    for tier in meta.get("tiers") or []:
+        if prompt > tier["context"]:
+            cost = tier["cost"]
+            break
     total = 0.0
     for key in ("input", "output", "cache_read", "cache_write"):
         per_million = cost.get(key, 0) or 0
