@@ -264,9 +264,7 @@ class ClaudeCodeAuth:
         account = _keychain_account()
         # `security -w` hex-encodes any stored password containing control
         # characters, so the blob must stay on a single line.
-        updated = json.dumps(
-            _merge_blob(_keychain_read(), creds), separators=(",", ":")
-        )
+        updated = json.dumps(_merge_blob(_keychain_read(), creds))
         subprocess.run(
             [
                 "security",
