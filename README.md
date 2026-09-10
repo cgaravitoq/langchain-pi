@@ -116,7 +116,10 @@ Free models include `deepseek-v4-flash-free`, `big-pickle`, `mimo-v2.5-free`, an
 Claude Code OAuth session already on the machine (`~/.claude/.credentials.json`),
 billing requests against your Claude Code subscription — no API key. It reads and
 refreshes the token in place (with a `claude` CLI fallback).
-On macOS it reads the login keychain item `Claude Code-credentials` first and falls back to `~/.claude/.credentials.json`, writing the refreshed token back to whichever source it read; an explicit `creds_path` always wins and uses only that file.
+On macOS it reads the login keychain item `Claude Code-credentials` first and
+falls back to `~/.claude/.credentials.json`, writing the refreshed token back
+to whichever source it read.
+An explicit `creds_path` always wins and uses only that file.
 
 ```python
 from open_langchain import ChatClaudeCode, create_chat
