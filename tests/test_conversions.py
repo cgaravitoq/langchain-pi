@@ -287,3 +287,8 @@ def test_calculate_cost_counts_cache_write_toward_the_prompt():
     tier = calculate_cost("gpt-5.6-terra", {"input": 271000, "cache_write": 1001})
     assert base == pytest.approx(0.5445)
     assert tier == pytest.approx(1.089005)
+
+
+def test_calculate_cost_ignores_output_tokens_for_the_tier():
+    cost = calculate_cost("gpt-5.6-luna", {"input": 200000, "output": 100000})
+    assert cost == pytest.approx(0.16)
